@@ -12,7 +12,7 @@ A lightweight, extendable front-end developer tool for mobile web page.
 - View console logs
 - View network requests
 - View document elements
-- View Cookies and localStorages
+- View Cookies, LocalStorage and SessionStorage
 - Execute JS command manually
 - Custom plugin
 
@@ -36,6 +36,12 @@ Import `dist/vconsole.min.js` to your project:
   var vConsole = new VConsole();
   console.log('Hello world');
 </script>
+```
+
+For TypeScript users:
+
+```javascript
+import 'path/to/vconsole.min.d.ts';
 ```
 
 See [Tutorial](./doc/tutorial.md) for more details.
@@ -69,13 +75,7 @@ Plugin:
 
  - [vConsole-sources](https://github.com/WechatFE/vConsole-sources)
  - [vconsole-webpack-plugin](https://github.com/diamont1001/vconsole-webpack-plugin)
-
-
-## CDN
-
-- [v3.0.0](https://res.wx.qq.com/mmbizwap/zh_CN/htmledition/js/vconsole/3.0.0/vconsole.min.js) (Recommended)
-- [v2.5.2](https://res.wx.qq.com/mmbizwap/zh_CN/htmledition/js/vconsole/2.5.2/vconsole.min.js)
-
+ 
 
 ## Changelog
 

@@ -58,7 +58,7 @@ var vConsole = new VConsole(option);
 vConsole.setOption('maxLogNumber', 5000);
 // 或者：
 vConsole.setOption({maxLogNumber: 5000});
-
+```
 
 ### 打印日志
 
@@ -81,6 +81,16 @@ console.info('bar');  // 白底紫字
 console.debug('oh');  // 白底黄字
 console.warn('foo');  // 黄底黄字
 console.error('bar'); // 红底红字
+```
+
+
+### 其他方法
+
+支持以下 `console` 方法：
+
+```javascript
+console.time('foo');    // 启动名为 foo 的计时器
+console.timeEnd('foo'); // 停止 foo 计时器并输出经过的时间
 ```
 
 
@@ -109,6 +119,21 @@ var uid = 233;
 console.log('UserID:', uid); // 打印出 UserID: 233
 ```
 
+
+### 样式
+
+可使用 `%c` 来添加样式：
+
+```javascript
+console.log('%c blue %c red', 'color:blue', 'color:red'); // blue red
+console.log('%c FOO', 'font-weight:bold', 'bar'); // FOO bar
+console.log('%c Foo %c bar', 'color:red'); // Foo %c bar
+```
+
+只有第一个参数支持 `%c` 格式，一旦出现 `%c` 格式，后续的字符串参数将作为 HTML style 样式来替换 `%c`；未被替换的 `%c`、剩余的参数，将作为默认日志照常输出。
+
+
+
 ### 特殊格式
 
 支持使用 `[system]` 作为第一个参数，来将 log 输出到 System 面板：
@@ -116,6 +141,12 @@ console.log('UserID:', uid); // 打印出 UserID: 233
 ```javascript
 console.log('[system]', 'foo'); // 'foo' 会输出到 System 面板
 console.log('[system] bar'); // 这行日志会输出到 Log 面板而非 System 面板
+```
+
+若编写自定义 log 面板插件，亦可通过上述格式将 log 输出到自定义面板：
+
+```javascript
+console.log('[myplugin]', 'bar'); // 'myplugin' 为自定义面板插件的 id
 ```
 
 

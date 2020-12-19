@@ -36,6 +36,7 @@ class VConsoleNetworkTab extends VConsolePlugin {
     this._send = undefined;
 
     this.mockAjax();
+    this.mockFetch();
   }
 
   onRenderTab(callback) {
@@ -130,7 +131,7 @@ class VConsoleNetworkTab extends VConsolePlugin {
 
     // remove dom
     for (let id in this.domList) {
-      this.domList[id].remove();
+      this.domList[id].parentNode.removeChild(this.domList[id]);
       this.domList[id] = undefined;
     }
     this.domList = {};
@@ -208,6 +209,7 @@ class VConsoleNetworkTab extends VConsolePlugin {
       case 'json':
         if (typeof item.response != 'undefined') {
           domData.response = JSON.stringify(item.response, null, 1);
+          domData.response = tool.htmlEncode(domData.response);
         }
         break;
       case 'blob':
@@ -288,7 +290,10 @@ class VConsoleNetworkTab extends VConsolePlugin {
 
         // update status
         item.readyState = XMLReq.readyState;
-        item.status = XMLReq.status;
+        item.status = 0;
+        if (XMLReq.readyState > 1) {
+          item.status = XMLReq.status;
+        }
         item.responseType = XMLReq.responseType;
 
         if (XMLReq.readyState == 0) {
@@ -358,19 +363,19 @@ class VConsoleNetworkTab extends VConsolePlugin {
 
       let query = XMLReq._url.split('?'); // a.php?b=c&d=?e => ['a.php', 'b=c&d=', '?e']
       item.url = query.shift(); // => ['b=c&d=', '?e']
-      
+
       if (query.length > 0) {
         item.getData = {};
         query = query.join('?'); // => 'b=c&d=?e'
         query = query.split('&'); // => ['b=c', 'd=?e']
         for (let q of query) {
           q = q.split('=');
-          item.getData[ q[0] ] = q[1];
+          item.getData[ q[0] ] = decodeURIComponent(q[1]);
         }
       }
 
       if (item.method == 'POST') {
-        
+
         // save POST data
         if (tool.isString(data)) {
           let arr = data.split('&');
@@ -393,6 +398,73 @@ class VConsoleNetworkTab extends VConsolePlugin {
     };
 
   };
+  
+  /**
+   * mock fetch request
+   * @private
+   */
+  mockFetch() {
+    let _fetch = window.fetch;
+    if(!_fetch){ return; }
+    let that = this;
+
+    let prevFetch = (url,init) => {
+      let id = that.getUniqueID()
+      that.reqList[id] = {}
+      let item = that.reqList[id] || {};
+      let query = url.split('?'); 
+      item.id = id;
+      item.method = init.method||'GET';
+      item.url = query.shift(); 
+
+      if (query.length > 0) {
+        item.getData = {};
+        query = query.join('?'); // => 'b=c&d=?e'
+        query = query.split('&'); // => ['b=c', 'd=?e']
+        for (let q of query) {
+          q = q.split('=');
+          item.getData[ q[0] ] = q[1];
+        }
+      }
+
+      if (item.method == 'POST') {
+        // save POST data
+        if (tool.isString(data)) {
+          let arr = data.split('&');
+          item.postData = {};
+          for (let q of arr) {
+            q = q.split('=');
+            item.postData[ q[0] ] = q[1];
+          }
+        } else if (tool.isPlainObject(data)) {
+          item.postData = data;
+        }
+      }
+      // UNSENT
+      if (!item.startTime) {
+        item.startTime = (+new Date());
+      }
+      return _fetch(url,init).then(response => {
+        response.clone().json().then(json => {
+          item.endTime = +new Date(),
+          item.costTime = item.endTime - (item.startTime || item.endTime);
+          item.status = response.status;
+          item.header = {}
+          for (let pair of response.headers.entries()) {
+            item.header[pair[0]] = pair[1]
+          }
+          item.response = json;
+          item.readyState = 4
+          const contentType = response.headers.get('content-type')
+          item.responseType  = contentType.includes('application/json')? 'json' : contentType.includes('text/html') ? 'text': ''
+          return json
+        })
+        that.updateRequest(id, item)
+        return response
+      })
+    }
+    window.fetch = prevFetch
+  }
 
   /**
    * generate an unique id string (32)

@@ -13,6 +13,7 @@ Unless required by applicable law or agreed to in writing, software distributed 
  * vConsole core class
  */
 
+import 'transitionEnd'
 import pkg from '../../package.json';
 import * as tool from '../lib/tool.js';
 import $ from '../lib/query.js';
@@ -25,6 +26,8 @@ import tplTopBarItem from './topbar_item.html';
 import tplToolItem from './tool_item.html';
 
 // built-in plugins
+import VConsolePlugin from '../lib/plugin.js';
+import VConsoleLogPlugin from '../log/log.js';
 import VConsoleDefaultPlugin from '../log/default.js';
 import VConsoleSystemPlugin from '../log/system.js';
 import VConsoleNetworkPlugin from '../network/network.js';
@@ -88,22 +91,22 @@ class VConsole {
       that._autoRun();
     };
     if (document !== undefined) {
-      if (document.readyState == 'complete') {
-        _onload();
+      if (document.readyState === 'loading') {
+        $.bind(window, 'DOMContentLoaded', _onload);
       } else {
-        $.bind(window, 'load', _onload);
+        _onload();
       }
     } else {
       // if document does not exist, wait for it
       let _timer;
       let _pollingDocument = function() {
-          if (!!document && document.readyState == 'complete') {
-            _timer && clearTimeout(_timer);
-            _onload();
-          } else {
-            _timer = setTimeout(_pollingDocument, 1);
-          }
-        };
+        if (!!document && document.readyState == 'complete') {
+          _timer && clearTimeout(_timer);
+          _onload();
+        } else {
+          _timer = setTimeout(_pollingDocument, 1);
+        }
+      };
       _timer = setTimeout(_pollingDocument, 1);
     }
   }
@@ -180,6 +183,11 @@ class VConsole {
 
     // remove from less to present transition effect
     $.one('.vc-mask', this.$dom).style.display = 'none';
+
+    // set theme
+    if (this.option.theme) {
+      this.$dom.setAttribute('data-theme', this.option.theme);
+    }
   };
 
   /**
@@ -238,7 +246,7 @@ class VConsole {
         }
         if (needFocus) {
           targetElem.focus();
-        } else {
+        } else if (typeof window.getSelection !== 'function' || !getSelection().rangeCount) {
           e.preventDefault(); // prevent click 300ms later
         }
         let touch = e.changedTouches[0];
@@ -273,8 +281,6 @@ class VConsole {
       that.switchPos.y = that.switchPos.endY;
       that.switchPos.startX = 0;
       that.switchPos.startY = 0;
-      that.switchPos.endX = 0;
-      that.switchPos.endY = 0;
       tool.setStorage('switch_x', that.switchPos.x);
       tool.setStorage('switch_y', that.switchPos.y);
     });
@@ -312,7 +318,19 @@ class VConsole {
     });
 
     // hide console panel when tap background mask
-    $.bind($.one('.vc-mask', that.$dom), 'click', function(e) {
+    let $mask = $.one('.vc-mask', this.$dom);
+    let $panel = $.one('.vc-panel', this.$dom);
+    const transitionEnd = window.transitionEnd($mask).whichTransitionEnd()
+    const onMaskTransitionEnd = function() {
+      $mask.style.display = 'none';
+      $panel.style.display = 'none';
+    };
+    if (transitionEnd) {
+      $.bind($mask, transitionEnd, onMaskTransitionEnd);
+    } else {
+      onMaskTransitionEnd();
+    }
+    $.bind($mask, 'click', function(e) {
       if (e.target != $.one('.vc-mask')) {
         return false;
       }
@@ -329,14 +347,21 @@ class VConsole {
     });
 
     // after console panel, trigger a transitionend event to make panel's property 'display' change from 'block' to 'none'
-    $.bind($.one('.vc-panel', that.$dom), 'transitionend webkitTransitionEnd oTransitionEnd otransitionend', function(e) {
-      if (e.target != $.one('.vc-panel')) {
-        return false;
-      }
+    const onPanelTransitionEnd = function(target) {
       if (!$.hasClass(that.$dom, 'vc-toggle')) {
-        e.target.style.display = 'none';
+        target.style.display = 'none';
       }
-    });
+    }
+    if (transitionEnd) {
+      $.bind($panel, transitionEnd, function(e) {
+        if (e.target != $panel) {
+          return false;
+        }
+        onPanelTransitionEnd(e.target);
+      });
+    } else {
+      onPanelTransitionEnd($panel);
+    }
 
     // disable background scrolling
     let $content = $.one('.vc-content', that.$dom);
@@ -395,6 +420,19 @@ class VConsole {
     // show first tab
     if (this.tabList.length > 0) {
       this.showTab(this.tabList[0]);
+    }
+
+    this.triggerEvent('ready');
+  }
+
+  /**
+   * trigger a vConsole.option event
+   * @protect
+   */
+  triggerEvent(eventName, param) {
+    eventName = 'on' + eventName.charAt(0).toUpperCase() + eventName.slice(1);
+    if (tool.isFunction(this.option[eventName])) {
+      this.option[eventName].apply(this, param);
     }
   }
 
@@ -483,6 +521,7 @@ class VConsole {
       }
     });
     // end init
+    plugin.isReady = true;
     plugin.trigger('ready');
   }
 
@@ -492,7 +531,9 @@ class VConsole {
    */
   _triggerPluginsEvent(eventName) {
     for (let id in this.pluginList) {
-      this.pluginList[id].trigger(eventName);
+      if (this.pluginList[id].isReady) {
+        this.pluginList[id].trigger(eventName);
+      }
     }
   }
 
@@ -502,7 +543,7 @@ class VConsole {
    */
   _triggerPluginEvent(pluginName, eventName) {
     let plugin = this.pluginList[pluginName];
-    if (plugin) {
+    if (!!plugin && plugin.isReady) {
       plugin.trigger(eventName);
     }
   }
@@ -618,13 +659,29 @@ class VConsole {
     }
     $.removeClass(this.$dom, 'vc-toggle');
     this._triggerPluginsEvent('hideConsole');
+  }
 
-    let $mask = $.one('.vc-mask', this.$dom),
-        $panel = $.one('.vc-panel', this.$dom);
-    $.bind($mask, 'transitionend', function(evnet) {
-      $mask.style.display = 'none';
-      $panel.style.display = 'none';
-    });
+  /**
+   * show switch button
+   * @public
+   */
+  showSwitch() {
+    if (!this.isInited) {
+      return;
+    }
+    let $switch = $.one('.vc-switch', this.$dom);
+    $switch.style.display = 'block';
+  }
+
+  /**
+   * hide switch button
+   */
+  hideSwitch() {
+    if (!this.isInited) {
+      return;
+    }
+    let $switch = $.one('.vc-switch', this.$dom);
+    $switch.style.display = 'none';
   }
 
   /**
@@ -654,7 +711,7 @@ class VConsole {
     $.removeClass($.all('.vc-tool', this.$dom), 'vc-toggle');
     $.addClass($.all('.vc-tool-' + tabID, this.$dom), 'vc-toggle');
     // trigger plugin event
-    this._triggerPluginEvent(this.activedTab, 'hide');
+    this.activedTab && this._triggerPluginEvent(this.activedTab, 'hide');
     this.activedTab = tabID;
     this._triggerPluginEvent(this.activedTab, 'show');
   }
@@ -692,8 +749,20 @@ class VConsole {
     }
     // remove DOM
     this.$dom.parentNode.removeChild(this.$dom);
+
+    // reverse isInited when destroyed
+    this.isInited = false;
   }
 
 } // END class
+
+// export static class
+VConsole.VConsolePlugin = VConsolePlugin;
+VConsole.VConsoleLogPlugin = VConsoleLogPlugin;
+VConsole.VConsoleDefaultPlugin = VConsoleDefaultPlugin;
+VConsole.VConsoleSystemPlugin = VConsoleSystemPlugin;
+VConsole.VConsoleNetworkPlugin = VConsoleNetworkPlugin;
+VConsole.VConsoleElementPlugin = VConsoleElementPlugin;
+VConsole.VConsoleStoragePlugin = VConsoleStoragePlugin;
 
 export default VConsole;

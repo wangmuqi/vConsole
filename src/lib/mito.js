@@ -46,7 +46,7 @@ export default function render(tpl, data, toString) {
   // remove spaces after switch
   tpl = tpl.replace(/(\{\{ ?switch(.+?)\}\})[\r\n\t ]+\{\{/g, '$1{{');
   // line breaks
-  tpl = tpl.replace(/^\n/, '').replace(/\n/g, '\\\n');
+  tpl = tpl.replace(/^[\r\n]/, '').replace(/\n/g, '\\\n').replace(/\r/g, '\\\r');
   // init code
   codeWrap = '(function(){\n';
   code = 'var arr = [];\n';
@@ -65,7 +65,7 @@ export default function render(tpl, data, toString) {
   let scriptList = document.getElementsByTagName('script');
   let nonce = '';
   if (scriptList.length > 0) {
-    nonce = scriptList[0].getAttribute('nonce') || ''; // get nonce to avoid `unsafe-inline`
+    nonce = scriptList[0].nonce || ''; // get nonce to avoid `unsafe-inline`
   }
   let script = document.createElement('SCRIPT');
   script.innerHTML = codeWrap;

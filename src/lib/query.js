@@ -18,15 +18,28 @@ import render from '../lib/mito.js';
 
 const $ = {};
 
+if (!Array.from) {
+  Array.from = function(collection) {
+    const arr = [];
+
+    for (let i = 0; i < collection.length; i++) {
+      arr.push(collection[i]);
+    }
+
+    return arr;
+  }
+}
+
 /**
  * get single element
  * @public
  */
 $.one = function(selector, contextElement) {
-  if (contextElement) {
-    return contextElement.querySelector(selector);
+  try {
+    return (contextElement || document).querySelector(selector) || undefined;
+  } catch (e) {
+    return undefined;
   }
-  return document.querySelector(selector);
 }
 
 /**
@@ -34,21 +47,16 @@ $.one = function(selector, contextElement) {
  * @public
  */
 $.all = function(selector, contextElement) {
-  let nodeList,
-    list = [];
-  if (contextElement) {
-    nodeList = contextElement.querySelectorAll(selector);
-  } else {
-    nodeList = document.querySelectorAll(selector);
+  try {
+    const nodeList = (contextElement || document).querySelectorAll(selector);
+    return Array.from(nodeList);
+  } catch (e) {
+    return [];
   }
-  if (nodeList && nodeList.length > 0) {
-    list = Array.prototype.slice.call(nodeList);
-  }
-  return list;
 }
 
 /**
- * add className to an element
+ * add className(s) to an or multiple element(s)
  * @public
  */
 $.addClass = function($el, className) {
@@ -60,7 +68,7 @@ $.addClass = function($el, className) {
   }
   for (let i=0; i<$el.length; i++) {
     let name = $el[i].className || '',
-        arr = name.split(' ');
+    arr = name.split(' ');
     if (arr.indexOf(className) > -1) {
       continue;
     }
@@ -70,7 +78,7 @@ $.addClass = function($el, className) {
 }
 
 /**
- * remove className from an element
+ * remove className(s) from an or multiple element(s)
  * @public
  */
 $.removeClass = function($el, className) {
@@ -96,16 +104,10 @@ $.removeClass = function($el, className) {
  * @public
  */
 $.hasClass = function($el, className) {
-  if (!$el) {
+  if (!$el || !$el.classList) {
     return false;
   }
-  let arr = $el.className.split(' ');
-  for (let i=0; i<arr.length; i++) {
-    if (arr[i] == className) {
-      return true;
-    }
-  }
-  return false;
+  return $el.classList.contains(className);
 }
 
 /**
@@ -120,15 +122,12 @@ $.bind = function($el, eventType, fn, useCapture) {
   if (!$el) {
     return;
   }
-  if (useCapture === undefined) {
-    useCapture = false;
-  }
   if (!isArray($el)) {
     $el = [$el];
   }
-  for (let i=0; i<$el.length; i++) {
-    $el[i].addEventListener(eventType, fn, useCapture);
-  }
+  $el.forEach((el) => {
+    el.addEventListener(eventType, fn, !!useCapture);
+  })
 }
 
 /**

@@ -58,10 +58,10 @@ export function isBoolean(value) {
   return Object.prototype.toString.call(value) == '[object Boolean]';
 }
 export function isUndefined(value) {
-  return Object.prototype.toString.call(value) == '[object Undefined]';
+  return value === undefined;
 }
 export function isNull(value) {
-  return Object.prototype.toString.call(value) == '[object Null]';
+  return value === null;
 }
 export function isSymbol(value) {
   return Object.prototype.toString.call(value) == '[object Symbol]';
@@ -132,22 +132,51 @@ export function htmlEncode(text) {
 }
 
 /**
- * JSON stringify, support circular structure
+ * Simple JSON stringify, stringify top level key-value
  */
+export function JSONStringify(stringObject) {
+  if (!isObject(stringObject) && !isArray(stringObject)) {
+    return JSON.stringify(stringObject);
+  }
 
-export function JSONStringify(stringObject, formatOption = '\t', replaceString = 'CIRCULAR_DEPENDECY_OBJECT') {
-  let cache = [];
-  const returnStringObject = JSON.stringify(stringObject, (key, value) => {
-    if (typeof value === 'object' && value !== null) {
-      if (~cache.indexOf(value)) {
-        return replaceString;
-      } 
-      cache.push(value);
+  let prefix = '{', suffix = '}';
+  if (isArray(stringObject)) {
+    prefix = '[';
+    suffix = ']'
+  }
+  let str = prefix;
+  const keys = getObjAllKeys(stringObject);
+  for (let i = 0; i < keys.length; i ++) {
+    const key = keys[i];
+    const value = stringObject[key];
+    try {
+      // key
+      if (!isArray(stringObject)) {
+        if (isObject(key) || isArray(key) || isSymbol(key)) {
+          str += Object.prototype.toString.call(key);
+        } else {
+          str += key;
+        }
+        str += ': ';
+      }
+
+      // value
+      if (isArray(value)) {
+        str += 'Array[' + value.length + ']';
+      } else if (isObject(value) || isSymbol(value) || isFunction(value)) {
+        str += Object.prototype.toString.call(value);
+      } else {
+        str += JSON.stringify(value);
+      }
+      if (i < keys.length - 1) {
+        str += ', ';
+      }
+    } catch (e) {
+      continue;
     }
-    return value;
-  }, formatOption);
-  cache = null;
-  return returnStringObject;
+  }
+  str += suffix;
+  return str;
 }
 
 /**
@@ -157,23 +186,14 @@ export function getObjAllKeys(obj) {
   if (!isObject(obj) && !isArray(obj)) {
     return [];
   }
-  let dontEnums = [
-    'toString',
-    'toLocaleString',
-    'valueOf',
-    'hasOwnProperty',
-    'isPrototypeOf',
-    'propertyIsEnumerable',
-    'constructor'
-  ];
-  let keys = [];
-  for (let key in obj) {
-    if (dontEnums.indexOf(key) < 0) {
-      keys.push(key);
-    }
+  if (isArray(obj)) {
+    const m = [];
+    obj.forEach((_, index) => {
+      m.push(index)
+    });
+    return m;
   }
-  keys = keys.sort();
-  return keys;
+  return Object.getOwnPropertyNames(obj).sort();
 }
 
 /**

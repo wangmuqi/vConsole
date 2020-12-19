@@ -1,5 +1,58 @@
 English | [简体中文](./CHANGELOG_CN.md)
 
+#### V3.3.4 (2019-08-19)
+
+- [FEATURE] Add `%c` log format to support custom log style, see [Tutorial](./doc/tutorial.md) for more details.
+- [FEATURE] Add `VConsole.VConsoleLogPlugin` (`VConsole.VConsole*` plugins etc.) to `VConsole` class.
+- [IMPROVE] Display vConsole on `window DOMContentLoaded` instead of `window load`.
+- [FIX] Fix remove cookie fail when it is set path=/ or top domain. (#264 by @qianxinfeng)
+- [FIX] Fix a few minor issues. (#267 by @Molunerfinn, #272 by @domom)
+
+
+#### V3.3.2 (2019-07-04)
+
+- [FEATURE] Add TypeScript definition file. (by by @jas0ncn)
+- [FIX] Fix switch button position issue. (by @rexschuang)
+- [FIX] Avoid scrolling to bottom when away from bottom edge. (by @ele828)
+- [FIX] Fix a few minor issues. (by @stenders)
+
+
+#### V3.3.0 (2019-02-02)
+
+- [FEATURE] Add the ability to collapse the same log.
+- [FIX] Fix issue which formatted log (like `console.log('[foo]', 'bar')`) will not display in Log tab.
+
+
+#### V3.2.2 (2019-01-17)
+
+- [FEATURE] Add console command prompt. (by @65147400)
+- [FEATURE] Add SessionStorage support in Storage tab. (by @hkc452)
+- [FIX] Fix `JSON.stringify` function which was incorrectly rewritten.
+- [FIX] Fix `logNumber` bug which was not reset when clear logs. (by @liuyuekeng)
+- [FIX] Fix unencoded HTML tag in Network tab. (by @mokang)
+- [FIX] Fix possible crash when decode content in Storage tab. (by @wolfsilver)
+- [FIX] Fix CSP buy cause by `nonce` attribute. (by @scotthuang)
+- [IMPROVE] Add bottom safe area to adapt to full screen such as iPhone X. (by @dingyi1993)
+
+
+#### V3.2.0 (2018-04-10)
+
+- [FEATURE] Support `console.time()` and `console.timeEnd()`.
+- [FEATRUE] Add `disableLogScrolling` (in `vConsole.option`).
+- [FIX] Fix `setOption()` error.
+- [FIX] Fix cookies' value wrong display.
+- [FIX] Fix "Uncaught InvalidStateError". (by @fireyy)
+
+
+#### V3.1.0 (2017-12-27)
+
+- [FEATURE] Add `vConsole.showSwitch()` and `vConsole.hideSwitch()` methods, see [Public Properties & Methods](./doc/public_properties_methods.md).
+- [FEATURE] Add `onReady` and `onClearLog` callback function to `vConsole.option`.
+- [FEATURE] Auto clear logs when `console.clear()` is called.
+- [FIX] Fix `\r` error when build in Windows.
+- [FIX] Fix `Symbol` error in iOS8 or other old OS.
+
+
 #### V3.0.0 (2017-09-27)
 
 Basic:

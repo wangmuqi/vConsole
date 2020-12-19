@@ -87,6 +87,16 @@ console.error('bar'); // red word, pink background
 ```
 
 
+### Other methods
+
+Supported `console` methods:
+
+```javascript
+console.time('foo');    // start a timer named "foo"
+console.timeEnd('foo'); // stop "foo" timer and print the elapsed time
+```
+
+
 ### Formatted object / array
 
 Object or Array variable will be printed as formatted JSON:
@@ -112,6 +122,20 @@ Multiple arguments are supported, each variable will be divided by a space:
 var uid = 233;
 console.log('UserID:', uid); // UserID: 233
 ```
+
+
+### Styled log
+
+Use `%c` to add style to logs:
+
+```javascript
+console.log('%c blue %c red', 'color:blue', 'color:red'); // blue red
+console.log('%c FOO', 'font-weight:bold', 'bar'); // FOO bar
+console.log('%c Foo %c bar', 'color:red'); // Foo %c bar
+```
+
+Note that only first parameter support `%c` format, and the following parameter(s) will be used as HTML style to fill `%c`, and the remain `%c` or parameters will be shown as normal logs.
+
 
 
 ### Special format
